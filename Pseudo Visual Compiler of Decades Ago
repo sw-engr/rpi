@@ -1,0 +1,741 @@
+See "my head stuck in the computer" blog to see the text better and to see the illustrations.
+
+
+Pseudo Visual Compiler of Decades Ago
+
+While trying to think of what to do next I thought that I could try to duplicate the "visual" compiler that I did years and years ago.  It used punched cards (what else was available?) instead of selecting button objects to place on a form and double clicking them to insert the entry point for an event handler to be filled in by the programmer.  But, I figure, in concept it was most likely the first example of a visual compiler.
+
+Since the company for which it was developed has not been in existence for a great many years, as well as while I was away, not seeing fit to continue the program's use I see no reason why I cannot publish this post.  Plus the fact that this attempt to reproduce it contains none of its code, which no longer exists, nor is in the same language.  This post represents only the idea that I had at the time.  That is, it is completely new and can't bear any relationship to the work of over 30 years ago except that both are (were) my own idea and work product.
+
+The program was for a military aircraft of some kind that contained a Control Display Unit (CDU) for the use of the pilot (crew?).  More recent units, now known as MCDUs for multi-function CDUs, can be found on the internet.  For example,
+
+The application, unlike that produced by the new "visual" compiler, was in two parts.  The application that produced tables and the application, known as an OFP (Operational Flight Program), that used the table to determine what action procedure/subroutine to execute.  
+
+The action procedure is the equivalent of event handler of the modern visual complier.  Unlike the modern version, the table produced by the "compiler" had to be supplied to the OFP and built into it.  And, since it was part of an embedded aircraft computer program load, the OFP also contained the code to deliver the key push event to the portion of the code that was part of the compiler concept.  That is, the code that then looked up the key of the push event in the associated table.  Following the lookup, this code would then cause the associated action procedure to be executed.  
+
+The action would depend on both the particular key and the particular page currently displayed (in the case of the Line Select Keys (LSKs) to the left and right of the display).  A significant part of the design was that there would be a one-for-one association between the page-key combination and the action routine.  Just like in a modern visual compiler.  That is, upon entry to the action routine, just like (for instance) a C# visual compiler event handler, there could only be one reason the routine was entered.  There wasn't any need for conditional logic to determine the reason the routine was entered.  It could only be because a known key was pushed while a known page was displayed on the CDU.
+
+As I mentioned above, the input for the table builder was on punched cards as was the code for the OFP (I would suppose).  As far as I can remember the created table must have been output on punched cards to be included in the card deck of the OFP.  (Or, perhaps, a punched paper tape.  After all these years I forget.)  Each input card would have needed an identifier for the CDU page as well as the CDU key.  Along with these two pieces of data would have been the alpha name of the Action routine to be invoked.  I imagine that there was some other fields to be supplied but I have long since forgotten them.  The punched card output deck would then be in a format that the OFP could interpret.  That is, at the very least, the action had to such that the linker could supply its address.
+
+This attempt to reproduce the compiler did not, of course, use punched cards.  Rather it was written in C# and uses modern visual compiler techniques.  But like a modern visual compiler it has one action routine for each LSK button / CDU page combination.  However, it has to use the created table to achieve that result like the old OFP application did.  That is, it doesn't take advantage of an event handler per button since that half of the application is a pseudo OFP (C# wouldn't be used for an aircraft application) and wouldn't correspond to the application of years ago.
+
+Surely, for a fighter(?) aircraft for which it was done, there was a second set of tables in the OFP to provide the address of each action procedure along with the name so that the action associated with the key and displayed page could be located.  (Note that for the non-LSKs keys below the display such as DIR, left arrow, etc, as illustrated in the sample MCDUs, the currently displayed page wouldn't matter.)  The OFP would have delivered the key push event to a common event handler from which the associated key push lookup routine would have looked the key up in the supplied table and, if an LSK, the displayed page.  This would have provided the supplied action name.  Or, perhaps, the table was such that it provided space for the linker to have supplied the address of the action subroutine such that the action name was no longer needed.  In any case, the action subroutine could then be executed.  And it would be a single purpose subroutine entered only because a particular key had been pushed while, in the case of LSKs, a particular page was displayed.  The entire reason for the "compiler".
+
+I harp on this because after I returned to the company from contracting elsewhere I was assigned to problem reports (PRs) concerning the displays (MCDUs).  While perusing the associated code I came across tables that reminded me of those I had created with the compiler.  Although their treatment was more complicated which I won't go into here.  But I mention it because the tables had to be built by hand.  And since built by hand they were more difficult to get correct.  So, the action routines were no longer single purpose.  The implementer would find an action that more or less did what was wanted and make use of it.  But the "less" part meant that conditional logic would be added to determine why the action had been entered to enable special code to be executed for the new, additional purpose and/or previous code to be avoided.  It has been my experience over the years that this decision has resulted in numerous additional PRs where the fix of one PR resulted in new ones.  Therefore, I'm still a supporter of simple single purpose subroutines.  Which a modern visual compiler with an event handler per graphical object encourages.
+
+Current Implementation
+
+Built into the current version are warnings when an Action name is about to be assigned to another page key combination or a new assignment is to be done to a page key combination – that is, a previous action assignment is about to be superceded.  The original wouldn't have had such warnings although it could have reported such results in an output listing.  As with this version, it didn't verify Action names with those in the OFP.  In the original's case this wouldn't have been known although another set of input cards could have supplied all action names of the OFP.
+
+Since I couldn't supply addresses to the action routines in the table by the OFP builder I still wanted to first add some dummy actions and have a table with the action names and their entry locations.  That is, in the original the compiler generated table was supplied to the OFP along with the code that looked up the action and executed the action when an key push event was received.  The linker, as part of the compile and build matched up the actions of the supplied table as external names with the addresses of the actions.  That isn't available with the way the C# application was done nor is it possible since C# doesn't allow pointers nor the ability to invoke a method via its address.
+
+So the table created in the "compiler" mode is accessed by the action name and the action is invoked by the known association of the name with the action method.  That is, the use of the LSK along with name of the displayed page (or just the non-LSK key) is used to search the table in the OFP mode to obtain the action name.  Then that name is used to invoke the associated method.  This would have been done via a switch statement except that the C# compiler didn't allow for the default case when none of the various string values were matched.  This usage of the switch statement wouldn't compile.  So a series of if statements was used instead.  So two no-no's of C# that I could have done without.
+
+The Code
+
+Program.cs – Program class
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace VisualCompiler
+{
+    static class Program
+    {
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
+        }
+    }
+}
+
+Form1.cs – Form1 class
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace VisualCompiler
+{
+    // This class displays general info and allows the selection of the CDU page
+    // and Action name to be associated with the building of a table of page, 
+    // key, and action combinations.  To be successful the Action names must be
+    // implemented in the OFP class.
+    public partial class Form1 : Form
+    {
+        static public Form1 General;
+        static public Form2 CDUForm;
+
+        public string actionName = "";
+        public bool actionNameAvailable = false;
+
+        public enum Modes {
+          BuildTable,
+          RunOFP
+        }
+ 
+        public enum Page
+        {
+            DC = 0,  // Don't care
+            DATA,
+            DIR,
+            FLIGHTPLAN,
+            INIT,
+            PERF,
+            PROG
+        }
+
+        private Page[] pageArray = new Page[7];
+
+        public Page selectedPage; 
+
+        public Modes Mode = Modes.BuildTable;
+
+        public Form1()
+        {
+            InitializeComponent();
+            General = this;
+            CDUForm = new Form2(General); // passing this form to Form2
+
+            CDUForm.Visible = true;
+
+            pageArray[0] = Page.DC;
+            pageArray[1] = Page.DATA;
+            pageArray[2] = Page.DIR;
+            pageArray[3] = Page.FLIGHTPLAN;
+            pageArray[4] = Page.INIT;
+            pageArray[5] = Page.PERF;
+            pageArray[6] = Page.PROG;
+
+            for (int p = 1; p <= 6; p++)
+            {
+                Page page;
+                page = pageArray[p];
+                pageNameList.Items.Add(page.ToString());
+                CurrentMode.Text = Mode.ToString();
+            }
+        } // end constructor
+
+        // Clear the action name from the text box
+        public void ActionNameClear()
+        {
+            ActionNameText.Clear();
+        } // end ActionNameClear
+
+        //************************************************
+        // Event handlers start here
+
+        // Switch the operational mode
+        private void ModeButton_Click(object sender, EventArgs e)
+        {
+            if (Mode == Modes.BuildTable)
+            {
+                Mode = Modes.RunOFP;
+            }
+            else
+            {
+                Mode = Modes.BuildTable;
+            }
+            CurrentMode.Text = Mode.ToString();
+
+        } // end ModeButton_Click
+
+        // Select the page being displayed on the CDU
+        private void pageNameList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string selected = pageNameList.SelectedItem.ToString();
+            int index = pageNameList.FindString(selected);
+            selectedPage = pageArray[index+1];
+            CDUForm.DisplayTitle(selected);
+
+        } // end pageNameList_SelectedIndexChanged
+
+        // Enter the name of an action to use with the page and CDU key
+        private void ActionNameText_KeyUp(object sender, KeyEventArgs e)
+        {
+            actionName = "";
+            actionNameAvailable = false;
+            if (e.KeyCode == Keys.Return)
+            {
+                actionName = ActionNameText.Text.Substring(
+                                 0, ActionNameText.Text.Length);
+                actionNameAvailable = true;
+            }
+        } // end ActionNameText_KeyUp
+
+        private void ActionNameText_TextChanged(object sender, EventArgs e)
+        {
+            // unused
+        } // end ActionNameText_TextChanged
+
+    } // end class Form1
+
+} // end namespace
+
+Form2.cs – Form2 class
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace VisualCompiler
+{
+    // This class displays a pseudo CDU and allows buttons to be clicked in
+    // either the table builder mode that implements the old "visual" compiler
+    // or the OFP mode that is a completely truncated version of an aircraft
+    // OFP to illustrate the treatment of CDU key pushes.
+    public partial class Form2 : Form
+    {
+        static private Form1 general;
+        static private Form2 CDUForm;
+        static public Form1 enterAction;
+
+        static private BuildTable buildTable;
+        static private OFP ofp;
+
+        public enum Key {
+            LSKL1,
+            LSKL2,
+            LSKL3,
+            LSKL4,
+            LSKL5,
+            LSKL6,
+            LSKR1,
+            LSKR2,
+            LSKR3,
+            LSKR4,
+            LSKR5,
+            LSKR6,
+            DATA,
+            DIR,
+            FLIGHTPLAN,
+            INIT,
+            PERF,
+            PROG,
+            PREV,
+            NEXT,
+            UP,
+            DOWN
+        }
+
+        public Form2(Form1 form1)
+        {
+            InitializeComponent();
+            CDUForm = this;
+            general = form1;
+            enterAction = form1;
+            buildTable = new BuildTable(general,CDUForm);
+            ofp = new OFP(buildTable); 
+        } // end constructor
+
+        public bool CheckGeneralKey(Key key)
+        {
+            if ((key == Key.DATA) || (key == Key.DIR) || (key == Key.FLIGHTPLAN) ||
+                (key == Key.INIT) || (key == Key.PERF) || (key == Key.PROG) ||
+                (key == Key.PREV) || (key == Key.NEXT) || (key == Key.UP) ||
+                (key == Key.DOWN))
+            { return true; }
+            else
+            { return false; }
+         } // end CheckGeneralKey
+
+        public void DisplayTitle(string text)
+        {
+            DisplayLabel.Text = text;
+        } // end DisplayTitle
+
+        // This method is to react to a key push in either mode
+        private void React(Key key) //, Form1.Page page)
+        {
+            if (general.Mode == Form1.Modes.BuildTable)
+            {
+                // Add the key, page, action combination to the table
+                buildTable.AddToTable(key, general.selectedPage);
+            }
+            else
+            {
+                // Lookup the action in the table and invoke it
+                ofp.TreatKey(key, general.selectedPage);
+            }
+        } // end React
+
+        // These event handlers all invoke the React method to allow a common
+        // method to determine whether in the build table mode or the OFP mode.
+        // This allows a common form to be used to interpret the button push
+        // as from the visual compiler / table builder or from the OFP using
+        // the created table.
+        private void LSKL1_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKL1); 
+        }
+
+        private void LSKL2_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKL2); 
+        }
+
+        private void LSKL3_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKL3);
+        }
+
+        private void LSKL4_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKL4);
+        }
+
+        private void LSKL5_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKL5); 
+        }
+
+        private void LSKL6_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKL6);
+        }
+
+        private void LSKR1_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKR1);
+        }
+
+        private void LSKR2_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKR2);
+        }
+
+        private void LSKR3_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKR3);
+        }
+
+        private void LSKR4_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKR4);
+        }
+
+        private void LSKR5_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKR5);
+        }
+
+        private void LSKR6_Click(object sender, EventArgs e)
+        {
+            React(Key.LSKR6);
+        }
+
+        private void DATA_Click(object sender, EventArgs e)
+        {
+            React(Key.DATA);
+        }
+
+        private void DIR_Click(object sender, EventArgs e)
+        {
+            React(Key.DIR);
+        }
+
+        private void Prog_Click(object sender, EventArgs e)
+        {
+            React(Key.PROG);        
+        }
+
+        private void Perf_Click(object sender, EventArgs e)
+        {
+            React(Key.PERF);       
+        }
+
+        private void Init_Click(object sender, EventArgs e)
+        {
+            React(Key.INIT);       
+        }
+
+        private void FlightPlan_Click(object sender, EventArgs e)
+        {
+            React(Key.FLIGHTPLAN);        
+        }
+
+        private void PrevPage_Click(object sender, EventArgs e)
+        {
+            React(Key.PREV);        
+        }
+
+        private void NextPage_Click(object sender, EventArgs e)
+        {
+            React(Key.NEXT);        
+        }
+
+        private void UpArrow_Click(object sender, EventArgs e)
+        {
+            React(Key.UP);        
+        }
+
+        private void DownArrow_Click(object sender, EventArgs e)
+        {
+            React(Key.DOWN);
+        }
+
+    } // end class Form2
+
+} // end namespace
+
+BuildTable.cs – BuildTable class
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
+
+namespace VisualCompiler
+{
+    // This class builds the table to be used by the OFP to select the action
+    // to be executed when a key is pushed on the currently displayed page.
+    public class BuildTable
+    {
+        private Form1 enterAction;
+        private Form2 ofp;
+
+        public struct CompilerDataTable
+        {
+            public Form2.Key key;
+            public Form1.Page page;
+            public string action; // associated with key and displayed page
+        }
+
+        public class CompilerTable
+        {
+            public int count;
+            public CompilerDataTable[] list = new CompilerDataTable[50];
+        }
+
+        public CompilerTable compilerTable = new CompilerTable();
+
+        public BuildTable(Form1 form1, Form2 form2)
+        {
+            enterAction = form1;
+            ofp = form2;
+            compilerTable.count = 0;
+            compilerTable.list[0].key = Form2.Key.LSKL1; // dummy since count is 0
+        } // end constructor
+
+        public void AddToTable(Form2.Key key, Form1.Page page)
+        {
+            string actionName = "";
+            int loopCount = 0;
+            while(true)
+            {
+                actionName = enterAction.actionName; 
+                if (!enterAction.actionNameAvailable)
+                {
+                    loopCount++;
+                    if (loopCount == 20)
+                    {
+                        MessageBoxButtons buttons = MessageBoxButtons.OK;
+                        DialogResult result;
+                        string message =
+                            "No Action name. An Action name must be supplied. Then reselect Key.";
+                        string caption = "Warning";
+                        result = MessageBox.Show(message, caption, buttons);
+                        return;
+                    }
+            	    Thread.Sleep(1000); // to give operator time to enter the name
+            	}
+            	else
+            	{
+                    break; // exit loop
+                }
+            }
+            if (CheckValues(key, page, actionName))
+            {
+                int index = compilerTable.count;
+                compilerTable.list[index].key = key;
+                if (ofp.CheckGeneralKey(key))
+                { compilerTable.list[index].page = Form1.Page.DC; } 
+                else
+                { compilerTable.list[index].page = page; }
+                compilerTable.list[index].action = actionName;
+                compilerTable.count++;
+                enterAction.actionName = "";
+                enterAction.actionNameAvailable = false;
+                enterAction.ActionNameClear();
+            }
+
+         } // end AddToTable
+
+        private bool CheckValues(Form2.Key key, Form1.Page page, string actionName)
+        {
+            MessageBoxButtons buttons = MessageBoxButtons.YesNo;
+            DialogResult result;
+
+            bool ok = true;
+            for (int i = 0; i < compilerTable.count; i++)
+            {
+                if (compilerTable.list[i].action == actionName)
+                {
+                    string message = 
+                        "Duplicate Action name. Did you mean to assign again?";
+                    string caption = "Warning";
+                    result = MessageBox.Show(message, caption, buttons);
+                    if (result == System.Windows.Forms.DialogResult.No)
+                    {
+                        ok = false;
+                        break; // exit loop
+                    }
+                }
+                if (ofp.CheckGeneralKey(key)) // displayed page doesn't matter
+                {                             //   for general keys
+                    return true;
+                }
+                if ((compilerTable.list[i].page == page) &&
+                    (compilerTable.list[i].key == key))
+                {
+                    string message =
+                        "Duplicate Page and Key combination. Did you mean to assign again?";
+                    string caption = "Warning";
+                    result = MessageBox.Show(message, caption, buttons);
+                    if (result == System.Windows.Forms.DialogResult.No)
+                    {
+                        ok = false;
+                        break; // exit loop
+                    }
+                }
+            }
+            return ok;
+        } // end CheckValues
+
+        public string Lookup(Form2.Key key, Form1.Page page)
+        {
+            if (ofp.CheckGeneralKey(key)) // displayed page doesn't matter
+            {
+                for (int i = 0; i < compilerTable.count; i++)
+                {
+                    if (compilerTable.list[i].key == key)
+                    {
+                        return compilerTable.list[i].action;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < compilerTable.count; i++)
+                {
+                    if ((compilerTable.list[i].page == page) &&
+                        (compilerTable.list[i].key == key))
+                    {
+                        return compilerTable.list[i].action;
+                    }
+                }
+            }
+            return "";
+        } // end Lookup
+
+    } // end class BuildTable
+
+} // end namespace
+
+OFP.cs – OFP class
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace VisualCompiler
+{
+    public class OFP
+    {
+        // This class is a pseudo version of an aircraft OFP.  The only
+        // purpose is to react to a key push on a selected display page
+        // by executing the associated action.  Each such action does
+        // nothing except to display, via a message box, that the action
+        // was entered.
+
+        // The key push event is delivered via the C# event handlers that
+        // are invoked via the Windows event.  Mimicking an aircraft IO
+        // sensor the C# event handler forwards the key push event to the
+        // key action event processing that looks up what action is 
+        // associated with the key and executes that action.
+
+        private BuildTable buildTable;
+
+        public OFP(BuildTable compilerTable)
+        {
+            buildTable = compilerTable; 
+        } // end constructor
+
+        private void InActionMessage(string action)
+        {
+            MessageBoxButtons buttons = MessageBoxButtons.OK;
+            DialogResult result;
+            string message = "Action ";
+            message += action;
+            message += " has been entered";
+            string caption = "Info";
+            result = MessageBox.Show(message, caption, buttons);
+        } // end InActionMessage
+
+        // Dummy actions -- much smaller number of course than would actually 
+        // be the case and with only the display of the message to do.  However,
+        // hopefully, with an action per display page and key combination an
+        // actual action would be small and uncomplicated.
+        private void Action1()
+        {
+            InActionMessage("Action1");
+        } // end Action1
+        private void Action2()
+        {
+            InActionMessage("Action2");
+        } // end Action2
+        private void Action3()
+        {
+            InActionMessage("Action3");
+        } // end Action3
+        private void Action4()
+        {
+            InActionMessage("Action4");
+        } // end Action4
+        private void Action5()
+        {
+            InActionMessage("Action5");
+        } // end Action5
+        private void Action6()
+        {
+            InActionMessage("Action6");
+        } // end Action6
+        private void Action7()
+        {
+            InActionMessage("Action7");
+        } // end Action7
+        private void Action8()
+        {
+            InActionMessage("Action8");
+        } // end Action8
+
+        // Lookup the action associated with the key and page in the table 
+        // built by the compiler and then execute the action.
+        // Note: Everything that I've found on the internet says that the
+        //       address of a C# method can't be done; that it isn't allowed
+        //       in C#.  Therefore, this method looks up the action name in
+        //       the compiler generated table and then invokes the action to
+        //       be associated with that name.
+        // Note: A switch statement would have been used but the default for
+        //       no match wouldn't compile.
+        public void TreatKey(Form2.Key key, Form1.Page page)
+        {
+            // Lookup the action name associated with the key and page
+            string actionName = buildTable.Lookup(key, page);
+
+            // If an association was made, invoke the action.
+            if (actionName != "")
+            {
+                if (actionName == "Action1")
+                {
+                    Action1();
+                }
+                else if (actionName == "Action2")
+                {
+                    Action2();
+                }
+                else if (actionName == "Action3")
+                {
+                    Action3();
+                }
+                else if (actionName == "Action4")
+                {
+                    Action4();
+                }
+                else if (actionName == "Action5")
+                {
+                    Action5();
+                }
+                else if (actionName == "Action6")
+                {
+                    Action6();
+                }
+                else if (actionName == "Action7")
+                {
+                    Action7();
+                }
+                else if (actionName == "Action8")
+                {
+                    Action8();
+                }
+                else
+                {
+                    MessageBoxButtons buttons = MessageBoxButtons.OK;
+                    DialogResult result;
+                    string message =
+                        "Action name not in OFP.  Action cannot be invoked";
+                    string caption = "Warning";
+                    result = MessageBox.Show(message, caption, buttons);
+                }
+            }
+            else
+            {
+                MessageBoxButtons buttons = MessageBoxButtons.OK;
+                DialogResult result;
+                string message =
+                    "No Action was entered into the compiler table for the page and key";
+                string caption = "Warning";
+                result = MessageBox.Show(message, caption, buttons);
+            }
+        }
+
+    } // end OFP class
+
+} // end namespace
+
+The Results
+
+A particular page is selected on Form1 along with the entry of an Action name (completed by the use of the Enter key).  Also on this form is the ability to switch the application mode from building the table to acting as if the OFP was running along with the ability to switch back again.  In the build table mode Form2 is then used to click on the particular key to be associated with the page and action.  In the OFP mode only Form2 is used to act as a pseudo CDU for selection of a previously assigned key and (if an LSK) the page that was selected when it was assigned.
+
+Form1 as initially displayed
+
+                              Sample CDU as originally displayed è
+
+
+                        
+
+
+
+After selection of the PERF page and Action1 along with the click of LSKL2 the two forms are hardly changed.
+PERF is now highlighted and Action1 appears in the box.
+PERF is now displayed rather than Title on the CDU to keep track of what page is displayed and LSK L2 is now highlighted as the clicked button.
+
+After the selection of the key to be associated with the page and action, the EnterActionName textbox is cleared so it appears as in the previous example.  
+
+After the Mode is changed to act as the OFP and LSK L2 is again clicked the popup message box is displayed.
+
+The example CDU is that of the right MCDU of the pair captured from the internet without all the keys and without the alphanumeric keys that would be used to insert data into the last line on the display.  And with the arrow buttons changed to display text instead.
+
+If an Action Name had been entered again, another Warning popup would have occurred and another if a duplicate LSK key had been clicked for the same displayed page.
+
+Further Thoughts
+
+The application for which I returned to do PRs was completely different from that for which the "visual" compiler was written.  It was in a different language and for a different computer and one with an "operating system".  This had to be a major reason for the fact that the tables were much more complicated.  That is, thinking back (way back) now, it has occurred to me that the computer that was being used for the compiler created tables was a very simple one that must have used a single (the one and only) thread.  That all the code was executed in a loop where certain routines would be executed only once in the major cycle and others, depending upon their importance, were executed more than once at certain offsets in the cycle.  The location of time consuming routines had to be balanced in the cycle so that those that had be run more often could be invoked in a timely manner.  And some particularly long running routines would need to be broken up so that only a portion of the code would be executed in each major cycle.  Something that I had forgotten until just now.  The joys of programming at an earlier time.  That, of course, continued to the time when memory was precious (well it was before as well) and code had to consider this.  Now, such as with the C# code that I have just written, the programmer can just get a new build in seconds and try it out and make a change and repeat.  Although I did decide in advance what my approach was going to be.
+
+Anyway, the application that I came back to do display PRs, was a much more complicated OFP running on much better computer with an actual operating system that was runnable on an aircraft.  As such the tables were such that an action could signal that a different process/thread had to be executed to obtain an intermediate result and, after this result was obtained and the original thread was again running, the next action step had to be selected depending upon whether the result was success or failure or result one vs result two.
+
+Of course I would think that a different "compiler" could have been written to take these options into account and hence still maintain single purpose actions.  But it wasn't.  So the actions got more and more conditional logic so they could still result in the same yes/no path to the next action to be done.  And the downstream actions also had to be considered.  So it became harder for the programmer to take into account all the perturbations so that fixing a given PR would break something else causing a new PR.
+
+Many years later a new system was to be developed and I had a hand in changing the design from the previous one.  I can not go into it but I will say that I reverted to type.  That is, I replaced the design that I have referenced above so that each particular "action" in each process/thread made its own selection of what was to be done next.  It was a message based system where (along with other sources) a key push action could initiate a particular message that would be routed to a process/thread designated to treat it.  The "action" routine of that thread could then, depending upon the circumstances, issue a new message that would be routed to another thread which could do the same until the results would be returned to the invoking thread and finally to the original thread.  Thus the treatment of the key push wasn't controlled from a particular process but each process/thread message "action" was in control of what it was going to reply and whether it first needed additional data from elsewhere.
+
+A minor variation was when the manager for this message based delivery system was significantly trimmed by someone for a multiple partition computer.  Afterwards, when I had occasion to work on it I would think how it would have been nice if the implementers had included its use for inter-partition messaging so that special code wouldn't have been needed when a message had to be delivered from a source in one partition to a destination in another.
+
+I guess that's all I can say about these matters.
+
