@@ -1,0 +1,70 @@
+﻿namespace VisualCompiler
+{
+    partial class BuildTableFormx
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+   //     private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+    //    protected override void Dispose(bool disposing)
+    //    {
+    //        if (disposing && (components != null))
+    //        {
+    //            components.Dispose();
+    //        }
+    //        base.Dispose(disposing);
+    //    }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+ 
+
+        #endregion
+
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox ActionNameText;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.ListBox pageNameList;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button ModeButton;
+        private System.Windows.Forms.Label CurrentMode;
+        private System.Windows.Forms.Panel CDUPanel;
+        private System.Windows.Forms.Button LSKL6;
+        private System.Windows.Forms.Button LSKL5;
+        private System.Windows.Forms.Button LSKL4;
+        private System.Windows.Forms.Button LSKL3;
+        private System.Windows.Forms.Button LSKL2;
+        private System.Windows.Forms.Button LSKL1;
+        private System.Windows.Forms.Panel DisplayPanel;
+        private System.Windows.Forms.Label DisplayLabel;
+        private System.Windows.Forms.Button DATA;
+        private System.Windows.Forms.Button INIT;
+        private System.Windows.Forms.Button PROG;
+        private System.Windows.Forms.Button PERF;
+        private System.Windows.Forms.Button DOWN;
+        private System.Windows.Forms.Button UP;
+        private System.Windows.Forms.Button NEXT;
+        private System.Windows.Forms.Button PREV;
+        private System.Windows.Forms.Button FPLAN;
+        private System.Windows.Forms.Button DIR;
+        private System.Windows.Forms.Button LSKR6;
+        private System.Windows.Forms.Button LSKR5;
+        private System.Windows.Forms.Button LSKR4;
+        private System.Windows.Forms.Button LSKR3;
+        private System.Windows.Forms.Button LSKR2;
+        private System.Windows.Forms.Button LSKR1;
+    }
+}

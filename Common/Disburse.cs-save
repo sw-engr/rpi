@@ -1,0 +1,445 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+
+namespace VisualCompiler
+{
+    public class Disburse
+    {
+ //       public string queueName;
+
+        public struct DisburseDataType
+        {
+            public Topic.TopicIdType topic;
+            public Forward forward;
+        }
+
+        private int iteration = 0;
+  //      private int queueIndex = 0;
+
+        // Queued items will be removed from the queue as they are read.
+        public struct QueueDataType // Queued topic messages
+        {
+            public Delivery.MessageType message;
+        };
+
+        int size = 10;
+//        private class QueueType
+        public class QueueType
+        {
+            public string name; // Name given to the queue by the component
+            public bool wait;
+            public bool periodic; 
+            public Forward universal;
+            public bool unread;
+            public int nextReadIndex;
+            public int nextWriteIndex;
+            public QueueDataType[] list = new QueueDataType[10]; // i.e., size
+        };
+
+        static private EventWaitHandle waitHandle;
+
+//        private QueueType queue = new QueueType();
+        public QueueType queue = new QueueType();
+
+ /*       private class QueueTableDataType
+        {
+            public QueueType queue = new QueueType();
+            public bool signaled = false;
+            public bool waitResult = false;
+        }
+
+        int tableSize = 5;
+        private class QueueTableType
+        {
+            public QueueType[] table = new QueueTableDataType[5]; // i.e., tableSize
+        }
+
+        private QueueTableType queueTable = new QueueTableType(); */
+
+        public Disburse() // constructor
+        {
+        }
+
+        public Disburse(string name, bool waitEvent,         // constructor
+                        bool periodic, Forward universal) 
+        {
+  //          queueName = name;
+            QueueType queue = new QueueType();
+            queue.name = name;
+            queue.wait = waitEvent;      // Wait Event of queue
+            queue.periodic = periodic;   // whether component using queue is periodic
+            queue.universal = universal; // general callback to treat message
+            queue.unread = false;
+            queue.nextReadIndex = 0;
+            queue.nextWriteIndex = 0;
+
+    //        queueTable.table[queueIndex] = queue;
+    //        queueIndex++;
+
+            // create the wait handle
+            waitHandle =
+                new EventWaitHandle(false, EventResetMode.ManualReset);
+        } // end constructor Disburse
+
+        public EventWaitHandle QueueWaitHandle()
+        {
+            return waitHandle;
+        } // end QueueWaitHandle
+
+        private void ForwardAnyMessage()
+        {
+            int managedThreadId = Thread.CurrentThread.ManagedThreadId;
+            ConsoleOut.WriteLine("Disburse ForwardAnyMessage " +
+        //                         queueTable[queueIndex].queue.name +
+                                 queue.name +
+                                 " " + iteration + " " + managedThreadId);
+
+            Delivery.MessageType message;
+
+            while (Unread())
+            {   // Read message from queue
+                message = Read();
+                ConsoleOut.WriteLine("Disburse Read Universal message " +
+                                   queue.name + " " + iteration + " " +
+                                   message.header.id.topic + " " +
+                                   message.data);
+
+                // Invoke the universal callback passing the received message
+                queue.universal(message);
+
+            } // end while
+        } // ForwardAnyMessage
+
+        // Wait for the event issued by Write.
+        public virtual void EventWait()
+        {
+            iteration++;
+            Thread thread = Thread.CurrentThread;
+            ConsoleOut.WriteLine("Disburse " + queue.name + " entered EventWait " //); //{0} entered EventWait {1}",
+                                 + thread.ManagedThreadId);
+     //                          queue.name, iteration);
+            // Reset the wait handle
+            bool signaled = false;
+            bool waitResult = false;
+            waitHandle.Reset(); // reset the wait handle
+
+            // Wait for the event to be signaled.
+            ConsoleOut.WriteLine("Disburse " + queue.name + " waiting " + iteration);
+            signaled = waitHandle.WaitOne(Timeout.Infinite, waitResult);
+
+            if (queue.universal != null)
+            {
+                ForwardAnyMessage();
+            }
+
+        } // end 
+
+
+        // Clear the queue if case don't want to instantiate the queue again
+        public virtual void Clear()
+        {
+            queue.unread = false;
+            queue.nextReadIndex = 0;
+            queue.nextWriteIndex = 0;
+        } // end Clear
+
+        public virtual Delivery.MessageType Read()
+        {
+            bool rtnNone = false;
+            int savedReadIndex;
+            if (queue.nextReadIndex == queue.nextWriteIndex)
+            {
+                ConsoleOut.WriteLine("Disburse Read NRI == nWI");
+                queue.unread = false;
+                rtnNone = true;
+            }
+            savedReadIndex = queue.nextReadIndex;
+            if ((queue.nextReadIndex + 1) >= size)
+            {
+                queue.nextReadIndex = 0;
+            }
+            else
+            {
+                queue.nextReadIndex++;
+            }
+            if (queue.nextReadIndex == queue.nextWriteIndex)
+            {
+                queue.unread = false;
+            }
+            else
+            {
+                queue.unread = true;
+            }
+            if (rtnNone)
+            {
+                ConsoleOut.WriteLine("Disburse Read " +  queue.name + " message" );
+                return Delivery.nullMessage;
+            }
+            else
+            {
+                ConsoleOut.WriteLine("Disburse Read " +  queue.name + " message" );
+                return queue.list[savedReadIndex].message;
+            }
+        } // end Read
+
+        public virtual bool Unread()
+        {
+            Thread thread = Thread.CurrentThread;
+            ConsoleOut.WriteLine("Disburse Unread " +
+                queue.name + " " + iteration + " " + queue.unread + " " + thread.ManagedThreadId);
+            return queue.unread;
+        } // end Unread
+
+        public virtual bool Write(Delivery.MessageType message)
+        {
+            bool rtn = true;
+
+            int currentIndex = queue.nextWriteIndex;
+            int nextIndex = currentIndex + 1;
+            if ((nextIndex) >= size)
+            {
+                nextIndex = 0;
+            }
+            if (nextIndex == queue.nextReadIndex)
+            { // queue overrun
+                ConsoleOut.WriteLine("ERROR: Disburse " + queue.name + " overrun" );
+                rtn = false;
+            }
+            if (rtn)
+            {
+                queue.list[currentIndex].message = message;
+                queue.nextWriteIndex = nextIndex;
+                queue.unread = true;
+                ConsoleOut.WriteLine("Disburse " + queue.name + " set unread");
+            }
+            if ((queue.wait) && (!queue.periodic))
+            {
+                ConsoleOut.WriteLine("Disburse " + queue.name + " signal wakeup " +
+                    iteration);
+                // signal wakeup of the component that instantiated the queue
+                waitHandle.Set();
+            }
+            return rtn;
+        } // end Write
+
+    } // end Disburse class
+
+    public class DisburseForward : Disburse
+    {
+        private int iteration = 0;
+
+        // Table of topics to disburse to their callback
+        public class DisburseTableType
+        {
+            public int count;
+            public DisburseDataType[] list = new DisburseDataType[10];
+        }
+
+        public DisburseTableType forwardTopicTable = new DisburseTableType();
+
+        const int size = 10;
+//        public class QueueType
+        public class QueueBytesType
+        {
+            public string name; // Name given to the queue by the component
+            public bool wait;
+            public bool periodic;
+            public Forward universal;
+            public bool unread; 
+            public int nextReadIndex;
+            public int nextWriteIndex;
+            public QueueDataType[] list = new QueueDataType[size];
+        };
+
+        public QueueBytesType queueBytes = new QueueBytesType();
+
+        static private EventWaitHandle waitHandle;
+
+        public DisburseForward(string name, DisburseTableType table, // constructor
+                               bool periodic, Forward universal)
+        {
+  //          queueName = name;
+            queueBytes.name = name;
+            queueBytes.wait = true;
+            queueBytes.periodic = periodic;
+            queueBytes.universal = universal;
+            queueBytes.unread = false;
+            queueBytes.unread = false;
+            queueBytes.nextReadIndex = 0;
+            queueBytes.nextWriteIndex = 0;
+            
+            forwardTopicTable.count = table.count;
+            for (int i = 0; i < table.count; i++)
+            {
+                forwardTopicTable.list[i] = table.list[i];
+            }
+
+            // Obtain a wait handle for the component that instantiated the queue
+            waitHandle =
+               new EventWaitHandle(false, EventResetMode.ManualReset);
+
+        } // end constructor DisburseBytesForward
+
+
+        private void ForwardMessage()
+        {
+            int managedThreadId = Thread.CurrentThread.ManagedThreadId;
+            ConsoleOut.WriteLine("Disburse signaled for " + queueBytes.name + " " 
+                                  + iteration + " " + managedThreadId);
+
+            Delivery.MessageType message;
+            Forward forward = null;
+
+            while (Unread())
+            {   // Read message from queue
+                message = Read();
+                ConsoleOut.WriteLine("Disburse Read message " +
+                                   queueBytes.name + iteration +
+                 //                  queueName + iteration +
+                                   message.header.id.topic +
+                                   message.data);
+                // Lookup callback associated with message topic
+                for (int i = 0; i < forwardTopicTable.count; i++)
+                {
+                    if ((message.header.id.topic == 
+                         forwardTopicTable.list[i].topic.topic) 
+                     && (message.header.id.ext == 
+                         forwardTopicTable.list[i].topic.ext))
+                    {
+                        forward = forwardTopicTable.list[i].forward;
+                        break; // exit loop
+                    }
+                }
+
+                // Invoke the callback passing the received message
+                if (forward != null)
+                {
+                    forward(message);
+                }
+                else if (forwardTopicTable.count > 0)
+                {
+                    ConsoleOut.WriteLine(
+                        "ERROR: No forward callback for topic " +
+                        queueBytes.name + " " +
+                        message.header.id.topic + " " + message.header.id.ext);
+                }
+                else
+                {
+                    queueBytes.universal(message);
+                }
+            } // end while
+        } // end ForwardMessage
+
+        // Wait for the event issued by Write.
+        public override void EventWait() 
+        {
+            iteration++;
+            ConsoleOut.WriteLine("Disburse " + queueBytes.name + " entered EventWait "
+                                  + iteration);
+            // Reset the wait handle
+            bool signaled = false;
+            bool waitResult = false;
+            waitHandle.Reset(); // reset the wait handle
+
+            // Wait for the event to be signaled.
+            ConsoleOut.WriteLine("Disburse " + queueBytes.name + " waiting " + iteration);
+            signaled = waitHandle.WaitOne(Timeout.Infinite, waitResult);
+
+            if (forwardTopicTable.count > 0)
+            {
+                ForwardMessage();
+            }
+        } // end EventWait
+
+        public override void Clear()
+        {
+            queueBytes.unread = false;
+            queueBytes.nextReadIndex = 0;
+            queueBytes.nextWriteIndex = 0;
+        } // end Clear
+
+        public override Delivery.MessageType Read()
+        {
+            bool rtnNone = false;
+            int savedReadIndex;
+            if (queueBytes.nextReadIndex == queueBytes.nextWriteIndex)
+            {
+                ConsoleOut.WriteLine("Disburse Read NRI == nWI");
+                queueBytes.unread = false;
+                rtnNone = true;
+            }
+            savedReadIndex = queue.nextReadIndex;
+            if ((queueBytes.nextReadIndex + 1) >= size)
+            {
+                queueBytes.nextReadIndex = 0;
+            }
+            else
+            {
+                queueBytes.nextReadIndex++;
+            }
+            if (queueBytes.nextReadIndex == queueBytes.nextWriteIndex)
+            {
+                queueBytes.unread = false;
+            }
+            else
+            {
+                queueBytes.unread = true;
+            }
+            if (rtnNone)
+            {
+                ConsoleOut.WriteLine("Disburse Read " + queueBytes.name + " no message");
+                return Delivery.nullMessage;
+            }
+            else
+            {
+                ConsoleOut.WriteLine("Disburse Read " + queueBytes.name + " message");
+                return queueBytes.list[savedReadIndex].message;
+            }
+        } // end Read
+
+        public override bool Unread()
+        {
+            ConsoleOut.WriteLine("Disburse Unread " +
+                queueBytes.name + " " + iteration + " " + queueBytes.unread);
+            return queueBytes.unread;
+        } // end Unread
+
+        public override bool Write(Delivery.MessageType message)
+        {
+            bool rtn = true;
+
+            int currentIndex = queueBytes.nextWriteIndex;
+            int nextIndex = currentIndex + 1;
+            if ((nextIndex) >= size)
+            {
+                nextIndex = 0;
+            }
+            if (nextIndex == queueBytes.nextReadIndex)
+            { // queue overrun
+                ConsoleOut.WriteLine("ERROR: Disburse " + queue.name + " overrun");
+                rtn = false;
+            }
+            if (rtn)
+            {
+                string xxx = queueBytes.name;
+                queueBytes.list[currentIndex].message = message;
+                queueBytes.nextWriteIndex = nextIndex;
+                queueBytes.unread = true;
+                ConsoleOut.WriteLine("Disburse " + queueBytes.name + " set unread");
+            }
+            if ((queue.wait) && (!queue.periodic))
+            {
+                ConsoleOut.WriteLine("Disburse " + queueBytes.name + " signal wakeup " +
+                    iteration);
+                // signal wakeup of the component that instantiated the queue
+                waitHandle.Set();
+            }
+            return rtn;
+        } // end Write
+
+    } // end DisburseForward class
+
+} // end namespace

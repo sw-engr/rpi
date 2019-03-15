@@ -1,0 +1,9 @@
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.pdb
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\WindowsFormsApplication1.Properties.Resources.resources
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\WindowsFormsApplication1.csproj.GenerateResource.Cache
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\WindowsFormsApplication1.exe
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\WindowsFormsApplication1.pdb
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\VisualCompiler.ConsoleForm.resources
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\VisualCompiler.Form1.resources
+C:\Source\XP3\Try5\VisualCompiler\WindowsFormsApplication1\obj\x86\Debug\VisualCompiler.CDUForm.resources
