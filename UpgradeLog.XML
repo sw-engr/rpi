@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="WinExplorer">
+</Property><Property Name="Solution File" Value="C:\Source\C#\FileXferWinExplorer\WinExplorer.sln">
+</Property><Property Name="User Options File" Value="C:\Source\C#\FileXferWinExplorer\WinExplorer.suo">
+</Property><Property Name="Date" Value="28 April, 2020">
+</Property><Property Name="Time" Value="18:56 PM">
+</Property></Properties><Event ErrorLevel="0" Project="" Source="WinExplorer.sln" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\WinExplorer.sln">
+</Event><Event ErrorLevel="0" Project="" Source="WinExplorer.suo" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\WinExplorer.suo">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="WinExplorer.csproj" Description="Project file successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\WinExplorer.csproj">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="WinExplorer.csproj.user" Description="Project user file successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\WinExplorer.csproj.user">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="AboutDlg.cs" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\AboutDlg.cs">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="AssemblyInfo.cs" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\AssemblyInfo.cs">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="WinExplorer.cs" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\WinExplorer.cs">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="licenses.licx" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\licenses.licx">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="AboutDlg.resx" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\AboutDlg.resx">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="WinExplorer.resx" Description="File successfully backed up as C:\Source\C#\FileXferWinExplorer\Backup\WinExplorer.resx">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="WinExplorer.csproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="WinExplorer" Source="WinExplorer.csproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="" Source="WinExplorer.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="WinExplorer.sln" Description="Converted">
+</Event><Event ErrorLevel="0" Project="WinExplorer" Source="WinExplorer.csproj" Description="Scan complete: Upgrade not required for project files.">
+</Event></UpgradeLog>
